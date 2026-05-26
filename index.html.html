@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treinamento SDR — Análise Salarial</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --border: #E2DED8;
+    --border-strong: #C8C3BB;
+    --text: #1C1A17;
+    --text-muted: #6B665F;
+    --text-faint: #9E9890;
+    --accent: #1D6B4F;
+    --accent-light: #E6F4EE;
+    --warn: #92570E;
+    --warn-light: #FDF3E3;
+    --danger: #8B1C1C;
+    --danger-light: #FDF0F0;
+    --blue: #1B4F8A;
+    --blue-light: #EBF2FA;
+    --purple: #4A3B9C;
+    --purple-light: #EEEDFB;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); padding: 2rem 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .sidebar-logo { padding: 0 1.5rem 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+  .sidebar-logo .label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); display: block; margin-bottom: 4px; }
+  .sidebar-logo .title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 1.5rem; font-size: 14px; color: var(--text-muted); cursor: pointer; border-left: 2px solid transparent; transition: all 0.15s; border: none; background: none; width: 100%; text-align: left; }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { color: var(--accent); background: var(--accent-light); border-left: 2px solid var(--accent); font-weight: 500; }
+  .nav-section { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); padding: 1.25rem 1.5rem 0.5rem; }
+  .sidebar-hint { padding: 1.25rem 1.5rem; font-size: 12px; color: var(--text-faint); line-height: 1.6; border-top: 1px solid var(--border); margin-top: 1rem; }
+
+  .main { flex: 1; padding: 2.5rem 2rem; max-width: 900px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .page-title { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
+  .page-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 2rem; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.25rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .badge-i { background: var(--blue-light); color: var(--blue); }
+  .badge-ii { background: var(--accent-light); color: var(--accent); }
+  .badge-iii { background: var(--purple-light); color: var(--purple); }
+  .total-cash { font-weight: 600; font-family: 'DM Mono', monospace; color: var(--accent); }
+
+  .info-callout { background: var(--accent-light); border: 1px solid #B8E0CC; border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13px; color: var(--accent); display: flex; gap: 10px; margin-top: 1rem; }
+
+  /* PERFIS */
+  .perfil-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1.75rem; overflow: hidden; }
+  .perfil-header { padding: 1.25rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border); }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+  .perfil-name { font-size: 16px; font-weight: 600; }
+  .perfil-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .perfil-body { padding: 1.25rem 1.5rem; }
+
+  .grids-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+  .grid-block { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; }
+  .grid-block-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-faint); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .info-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; }
+  .info-label { font-size: 12px; color: var(--text-muted); }
+  .info-value { font-size: 14px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .info-value.highlight { color: var(--accent); }
+  .info-value.danger { color: var(--danger); }
+
+  .delta-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg); border-radius: var(--radius-sm); margin-bottom: 1rem; font-size: 13px; }
+  .delta-label { color: var(--text-muted); flex: 1; }
+  .delta-val { font-family: 'DM Mono', monospace; font-weight: 600; font-size: 14px; }
+  .delta-pos { color: var(--accent); }
+  .delta-neg { color: var(--danger); }
+  .delta-neu { color: var(--warn); }
+
+  .alerta { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; line-height: 1.55; }
+  .alerta-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alerta-ok { background: var(--accent-light); color: #1A5C40; border: 1px solid #B8E0CC; }
+  .alerta-warn { background: var(--warn-light); color: var(--warn); border: 1px solid #F0D09A; }
+  .alerta-bad { background: var(--danger-light); color: var(--danger); border: 1px solid #F2B8B8; }
+
+  .reveal-btn { background: none; border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--text-muted); cursor: pointer; width: 100%; text-align: left; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+  .reveal-btn:hover { background: var(--bg); color: var(--text); }
+  .hidden-alerta { display: none; }
+
+  /* ROLEPLAY */
+  .rp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1.5rem; overflow: hidden; }
+  .rp-header { padding: 1rem 1.5rem; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .rp-header-title { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-muted); text-transform: uppercase; }
+  .rp-header-context { font-size: 12px; color: var(--text-faint); margin-top: 4px; font-style: italic; }
+  .rp-body { padding: 1.5rem; }
+  .chat-area { margin-bottom: 1rem; }
+  .msg-row { margin-bottom: 12px; display: flex; flex-direction: column; }
+  .msg-row.right { align-items: flex-end; }
+  .msg-sender { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .msg-bubble { max-width: 82%; padding: 10px 14px; border-radius: var(--radius); font-size: 14px; line-height: 1.6; }
+  .msg-cand { background: var(--bg); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+  .msg-rec { background: var(--accent); color: #FFFFFF; border-bottom-right-radius: 4px; }
+  .rp-tip { background: var(--purple-light); border: 1px solid #C8C2F2; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; color: var(--purple); line-height: 1.55; }
+  .rp-tip strong { font-weight: 600; }
+
+  /* BANCO */
+  .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+  .pergunta-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .pergunta-item:last-child { border-bottom: none; }
+  .pergunta-num { width: 26px; height: 26px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .pergunta-text { font-size: 14px; line-height: 1.6; color: var(--text); font-style: italic; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { padding: 1.5rem 1rem; }
+    .grids-wrap { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="label">Material de 1:1</span>
+      <div class="title">Treinamento SDR<br>Análise Salarial</div>
+    </div>
+    <span class="nav-section">Seções</span>
+    <button class="nav-item active" onclick="showTab('ref', this)"><span>📊</span> Tabela de referência</button>
+    <button class="nav-item" onclick="showTab('perfis', this)"><span>👤</span> Perfis para análise</button>
+    <button class="nav-item" onclick="showTab('roleplay', this)"><span>💬</span> Roleplay de perguntas</button>
+    <button class="nav-item" onclick="showTab('banco', this)"><span>📋</span> Banco de perguntas</button>
+    <div class="sidebar-hint">
+      Fluxo do 1:1:<br>
+      1. Mostrar o perfil<br>
+      2. Pedir análise dela<br>
+      3. Fazer o roleplay<br>
+      4. Revelar o gabarito
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- REFERÊNCIA -->
+    <div id="tab-ref" class="section active">
+      <div class="page-title">Tabela de referência salarial</div>
+      <p class="page-desc">Faixas fixas + comissão e total cash por nível e cidade</p>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Nível</th>
+              <th>Comissão (100% meta)</th>
+              <th>Fixo CWB</th>
+              <th>Total cash CWB</th>
+              <th>Fixo SP</th>
+              <th>Total cash SP</th>
+              <th>Fixo FOR</th>
+              <th>Total cash FOR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-i">SDR I</span></td>
+              <td>R$ 2.000</td>
+              <td>R$ 2.700</td><td class="total-cash">R$ 4.700</td>
+              <td>R$ 3.000</td><td class="total-cash">R$ 5.000</td>
+              <td>R$ 2.400</td><td class="total-cash">R$ 4.400</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-ii">SDR II</span></td>
+              <td>R$ 2.500</td>
+              <td>R$ 4.500</td><td class="total-cash">R$ 7.000</td>
+              <td>R$ 5.000</td><td class="total-cash">R$ 7.500</td>
+              <td>R$ 4.000</td><td class="total-cash">R$ 6.500</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-iii">SDR III</span></td>
+              <td>R$ 3.000</td>
+              <td>R$ 6.075</td><td class="total-cash">R$ 9.075</td>
+              <td>R$ 6.750</td><td class="total-cash">R$ 9.750</td>
+              <td>R$ 5.400</td><td class="total-cash">R$ 8.400</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info-callout">
+          <span>💡</span>
+          <span>O total cash considera fixo + comissão com 100% de meta batida. Acima de 100%, o upside pode ser ainda maior dependendo do modelo de aceleração.</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">A análise certa não começa pela pretensão</div>
+        <div style="font-size: 14px; color: var(--text-muted); line-height: 1.7;">
+          <p style="margin-bottom:10px">A pretensão é um dado de saída — o candidato projeta o que quer ganhar. O que importa é entender o <strong>ponto de partida real</strong>: quanto ele ganha hoje no total (fixo + variável médio) e como isso se compara com o que a gente oferece.</p>
+          <p style="margin-bottom:10px">Três perguntas-chave antes de qualquer número:</p>
+          <p style="margin-bottom:6px"><strong>1. Qual o fixo atual?</strong> — base real, não pretensão.</p>
+          <p style="margin-bottom:6px"><strong>2. Tem comissão hoje? Qual a média real que recebe?</strong> — não o teto, a média.</p>
+          <p><strong>3. O total cash atual vs. nosso total cash</strong> — aí sim dá pra comparar de igual pra igual.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERFIS -->
+    <div id="tab-perfis" class="section">
+      <div class="page-title">Perfis para análise</div>
+      <p class="page-desc">Analise o salário atual + pretensão antes de revelar o gabarito</p>
+
+      <!-- PERFIL 1: pretensão alta, mas total cash atual é parecido com o nosso -->
+      <div class="perfil-card">
+        <div class="perfil-header">
+          <div class="avatar" style="background: var(--blue-light); color: var(--blue);">CM</div>
+          <div>
+            <div class="perfil-name">Carlos M. — São Paulo</div>
+            <div class="perfil-sub">2 anos como SDR • Geração de leads B2B • Última empresa: EdTech</div>
+          </div>
+        </div>
+        <div class="perfil-body">
+          <div class="grids-wrap">
+            <div class="grid-block">
+              <div class="grid-block-title">Realidade atual</div>
+              <div class="info-row"><span class="info-label">Fixo atual</span><span class="info-value">R$ 4.500</span></div>
+              <div class="info-row"><span class="info-label">Comissão média</span><span class="info-value">R$ 900 / mês</span></div>
+              <div class="info-row"><span class="info-label">Total cash atual</span><span class="info-value highlight">R$ 5.400</span></div>
+              <div class="info-row"><span class="info-label">Pretensão (fixo)</span><span class="info-value">R$ 6.000</span></div>
+            </div>
+            <div class="grid-block">
+              <div class="grid-block-title">Nossa oferta — SDR II SP</div>
+              <div class="info-row"><span class="info-label">Fixo</span><span class="info-value">R$ 5.000</span></div>
+              <div class="info-row"><span class="info-label">Comissão (100% meta)</span><span class="info-value">R$ 2.500</span></div>
+              <div class="info-row"><span class="info-label">Total cash</span><span class="info-value highlight">R$ 7.500</span></div>
+              <div class="info-row"><span class="info-label">Nível mapeado</span><span class="info-value"><span class="badge badge-ii">SDR II</span></span></div>
+            </div>
+          </div>
+          <div class="delta-row">
+            <span class="delta-label">Delta total cash (nosso vs atual)</span>
+            <span class="delta-val delta-pos">+R$ 2.100 a favor</span>
+          </div>
+          <button class="reveal-btn" onclick="revelar(this)">🔍 Revelar análise do perfil</button>
+          <div class="hidden-alerta">
+            <div class="alerta alerta-ok">
+              <span class="alerta-icon">✅</span>
+              <span><strong>Pretensão alta, mas total cash atual é menor que o nosso.</strong> Ele pede R$ 6.000 de fixo, mas ganha R$ 5.400 no total hoje — e a gente oferece R$ 7.500. O fixo fica R$ 1.000 abaixo da pretensão, mas o total cash é R$ 2.100 acima da realidade atual dele. Candidatura muito viável — o argumento está no total cash, não no fixo. Vale perguntar se ele tem abertura pra modelo com variável forte.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFIL 2: 2 anos de exp, sem comissão, pretensão de fixo acima do que oferecemos -->
+      <div class="perfil-card">
+        <div class="perfil-header">
+          <div class="avatar" style="background: var(--accent-light); color: var(--accent);">JL</div>
+          <div>
+            <div class="perfil-name">Juliana L. — Fortaleza</div>
+            <div class="perfil-sub">2 anos como SDR • Sempre trabalhou só com fixo • Nunca teve modelo de comissão</div>
+          </div>
+        </div>
+        <div class="perfil-body">
+          <div class="grids-wrap">
+            <div class="grid-block">
+              <div class="grid-block-title">Realidade atual</div>
+              <div class="info-row"><span class="info-label">Fixo atual</span><span class="info-value">R$ 3.500</span></div>
+              <div class="info-row"><span class="info-label">Comissão média</span><span class="info-value">R$ 0</span></div>
+              <div class="info-row"><span class="info-label">Total cash atual</span><span class="info-value highlight">R$ 3.500</span></div>
+              <div class="info-row"><span class="info-label">Pretensão (fixo)</span><span class="info-value">R$ 4.500</span></div>
+            </div>
+            <div class="grid-block">
+              <div class="grid-block-title">Nossa oferta — SDR I FOR</div>
+              <div class="info-row"><span class="info-label">Fixo</span><span class="info-value">R$ 2.400</span></div>
+              <div class="info-row"><span class="info-label">Comissão (100% meta)</span><span class="info-value">R$ 2.000</span></div>
+              <div class="info-row"><span class="info-label">Total cash</span><span class="info-value highlight">R$ 4.400</span></div>
+              <div class="info-row"><span class="info-label">Nível mapeado</span><span class="info-value"><span class="badge badge-i">SDR I</span></span></div>
+            </div>
+          </div>
+          <div class="delta-row">
+            <span class="delta-label">Delta total cash (nosso vs atual)</span>
+            <span class="delta-val delta-pos">+R$ 900 a favor — mas fixo cai R$ 1.100</span>
+          </div>
+          <button class="reveal-btn" onclick="revelar(this)">🔍 Revelar análise do perfil</button>
+          <div class="hidden-alerta">
+            <div class="alerta alerta-warn">
+              <span class="alerta-icon">⚠️</span>
+              <span><strong>Candidata que nunca trabalhou com variável — o fixo é a referência dela.</strong> Ela ganha R$ 3.500 hoje só de fixo e pede R$ 4.500 — nosso fixo (R$ 2.400) fica R$ 2.100 abaixo da pretensão e R$ 1.100 abaixo do que ela ganha hoje. O total cash (R$ 4.400) supera o atual em R$ 900, mas isso depende de comissão — algo que ela nunca viveu. O desafio aqui não é só o número: é ajudá-la a entender o modelo variável antes de fazer qualquer comparação. Se ela não tiver abertura pra isso, o fixo sozinho inviabiliza.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFIL 3: candidato com fixo alto hoje, comissão fraca — risco de frustração -->
+      <div class="perfil-card">
+        <div class="perfil-header">
+          <div class="avatar" style="background: var(--warn-light); color: var(--warn);">RF</div>
+          <div>
+            <div class="perfil-name">Ricardo F. — Curitiba</div>
+            <div class="perfil-sub">4 anos como SDR sênior • Liderou squad de BDRs • Curitiba</div>
+          </div>
+        </div>
+        <div class="perfil-body">
+          <div class="grids-wrap">
+            <div class="grid-block">
+              <div class="grid-block-title">Realidade atual</div>
+              <div class="info-row"><span class="info-label">Fixo atual</span><span class="info-value">R$ 7.500</span></div>
+              <div class="info-row"><span class="info-label">Comissão média</span><span class="info-value">R$ 500 / mês</span></div>
+              <div class="info-row"><span class="info-label">Total cash atual</span><span class="info-value highlight">R$ 8.000</span></div>
+              <div class="info-row"><span class="info-label">Pretensão (fixo)</span><span class="info-value">R$ 5.000</span></div>
+            </div>
+            <div class="grid-block">
+              <div class="grid-block-title">Nossa oferta — SDR III CWB</div>
+              <div class="info-row"><span class="info-label">Fixo</span><span class="info-value">R$ 6.075</span></div>
+              <div class="info-row"><span class="info-label">Comissão (100% meta)</span><span class="info-value">R$ 3.000</span></div>
+              <div class="info-row"><span class="info-label">Total cash</span><span class="info-value highlight">R$ 9.075</span></div>
+              <div class="info-row"><span class="info-label">Nível mapeado</span><span class="info-value"><span class="badge badge-iii">SDR III</span></span></div>
+            </div>
+          </div>
+          <div class="delta-row">
+            <span class="delta-label">Delta total cash (nosso vs atual)</span>
+            <span class="delta-val delta-pos">+R$ 1.075 a favor — com ressalva</span>
+          </div>
+          <button class="reveal-btn" onclick="revelar(this)">🔍 Revelar análise do perfil</button>
+          <div class="hidden-alerta">
+            <div class="alerta alerta-warn">
+              <span class="alerta-icon">⚠️</span>
+              <span><strong>Atenção: fixo vai cair, mesmo que o total cash seja potencialmente melhor.</strong> Ele ganha R$ 7.500 fixo hoje e pede R$ 5.000 — mas isso pode ser descuido, não consciência real. Nosso fixo (R$ 6.075) é acima da pretensão, mas abaixo do atual. O total cash (R$ 9.075) supera a realidade dele em R$ 1.075 com 100% da meta — mas isso depende de como ele performa, e é algo que você ainda não sabe. Seja transparente: o fixo vai cair em relação ao atual, e o total cash depende do variável. Não esconda essa conta.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFIL 4: desalinhamento duplo — total cash atual muito maior que o nosso -->
+      <div class="perfil-card">
+        <div class="perfil-header">
+          <div class="avatar" style="background: var(--danger-light); color: var(--danger);">AL</div>
+          <div>
+            <div class="perfil-name">Amanda L. — São Paulo</div>
+            <div class="perfil-sub">1 ano de experiência • São Paulo • Comissão variável atual</div>
+          </div>
+        </div>
+        <div class="perfil-body">
+          <div class="grids-wrap">
+            <div class="grid-block">
+              <div class="grid-block-title">Realidade atual</div>
+              <div class="info-row"><span class="info-label">Fixo atual</span><span class="info-value">R$ 4.800</span></div>
+              <div class="info-row"><span class="info-label">Comissão média</span><span class="info-value">R$ 700 / mês</span></div>
+              <div class="info-row"><span class="info-label">Total cash atual</span><span class="info-value danger">R$ 5.500</span></div>
+              <div class="info-row"><span class="info-label">Pretensão (fixo)</span><span class="info-value">R$ 5.500</span></div>
+            </div>
+            <div class="grid-block">
+              <div class="grid-block-title">Nossa oferta — SDR I SP</div>
+              <div class="info-row"><span class="info-label">Fixo</span><span class="info-value">R$ 3.000</span></div>
+              <div class="info-row"><span class="info-label">Comissão (100% meta)</span><span class="info-value">R$ 2.000</span></div>
+              <div class="info-row"><span class="info-label">Total cash</span><span class="info-value highlight">R$ 5.000</span></div>
+              <div class="info-row"><span class="info-label">Nível mapeado</span><span class="info-value"><span class="badge badge-i">SDR I</span></span></div>
+            </div>
+          </div>
+          <div class="delta-row">
+            <span class="delta-label">Delta total cash (nosso vs atual)</span>
+            <span class="delta-val delta-neg">-R$ 500 contra — mesmo com 100% da meta</span>
+          </div>
+          <button class="reveal-btn" onclick="revelar(this)">🔍 Revelar análise do perfil</button>
+          <div class="hidden-alerta">
+            <div class="alerta alerta-bad">
+              <span class="alerta-icon">🚫</span>
+              <span><strong>Desalinhamento real — não só na pretensão.</strong> A pretensão dela (R$ 5.500 fixo) coincide exatamente com o total cash atual — ela nem percebe que está pedindo de fixo o que já ganha no total hoje. Nosso total cash com 100% da meta (R$ 5.000) ainda fica R$ 500 abaixo do que ela ganha hoje, e o fixo cai R$ 1.800. É um retrocesso financeiro real, independente de performance. Seja honesta: a conta não fecha sem uma mudança significativa de expectativa.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROLEPLAY -->
+    <div id="tab-roleplay" class="section">
+      <div class="page-title">Roleplay de perguntas</div>
+      <p class="page-desc">Pause antes de cada resposta da recrutadora e treine a reação certa</p>
+
+      <!-- RP 1 -->
+      <div class="rp-card">
+        <div class="rp-header">
+          <div class="rp-header-title">Situação 1 — Pretensão alta, mas total cash atual é menor que o nosso</div>
+          <div class="rp-header-context">Carlos M. • Ganha R$ 5.400 hoje • Pede R$ 6.000 fixo • Nosso total cash: R$ 7.500</div>
+        </div>
+        <div class="rp-body">
+          <div class="chat-area">
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Minha pretensão é R$ 6.000 de fixo."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Entendido! Antes de falar dos nossos números, me conta — qual é sua composição atual? Fixo mais variável, como funciona hoje?"</div>
+            </div>
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Tenho R$ 4.500 fixo e uma comissão que varia... umas vezes R$ 800, R$ 1.000 por mês."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Faz sentido, obrigada! Então hoje você está levando em torno de R$ 5.400 no total, certo? Deixa eu te mostrar como fica com a gente: o fixo seria R$ 5.000 — um pouco abaixo da sua pretensão — mas a comissão com 100% da meta bate R$ 2.500. Total cash de R$ 7.500. Como você se relaciona com modelo de comissão — é algo que faz sentido pra você?"</div>
+            </div>
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Sim, tenho experiência com isso. Funciona bem pra mim."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Ótimo! Então o cenário é: sairia de R$ 5.400 no total hoje pra até R$ 7.500 com a gente. O fixo fica um pouco abaixo do que você pediu, mas o pacote total é bem superior ao que você tem hoje. Faz sentido pra você essa troca?"</div>
+            </div>
+          </div>
+          <div class="rp-tip">
+            <strong>Por que funciona:</strong> a recrutadora primeiro descobre o total cash real — não a pretensão. Aí a comparação muda completamente: não é "fixo menor", é "total cash R$ 2.100 maior". O argumento só fica forte quando você conhece o ponto de partida.
+          </div>
+        </div>
+      </div>
+
+      <!-- RP 2 -->
+      <div class="rp-card">
+        <div class="rp-header">
+          <div class="rp-header-title">Situação 2 — Candidata sem histórico de comissão, fixo abaixo da pretensão e do atual</div>
+          <div class="rp-header-context">Juliana L. • Ganha R$ 3.500 só de fixo • Pede R$ 4.500 • Nosso fixo: R$ 2.400 • Total cash: R$ 4.400</div>
+        </div>
+        <div class="rp-body">
+          <div class="chat-area">
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Minha pretensão é R$ 4.500 fixo. Hoje ganho R$ 3.500, só fixo mesmo — nunca tive comissão."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Obrigada por compartilhar! Antes de falar dos nossos números, quero entender melhor — você nunca trabalhou com modelo de comissão. Como você enxerga isso? Tem abertura pra um pacote que mistura fixo menor com variável?"</div>
+            </div>
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Nunca tive, então não sei bem como funciona. Tenho um pouco de receio de depender de variável..."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Entendo — é natural ter essa dúvida. Deixa eu ser transparente sobre como fica o nosso pacote: o fixo aqui é R$ 2.400 — abaixo do que você ganha hoje e da sua pretensão. Com a comissão em 100% da meta, o total cash chega em R$ 4.400, que supera o que você recebe hoje. Mas eu sei que pra quem nunca teve variável, depender de uma parte que não é garantida pode ser desconfortável. Como você se sente em relação a isso?"</div>
+            </div>
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"É bastante diferente do que estou acostumada... preciso pensar."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Faz todo sentido levar esse tempo. Quero que você tome essa decisão com clareza — não quero que avance e depois se arrependa pela questão financeira. Se quiser, posso te explicar melhor como funciona a estrutura de meta antes de você decidir se faz sentido seguir."</div>
+            </div>
+          </div>
+          <div class="rp-tip">
+            <strong>Por que funciona:</strong> a recrutadora percebe que o problema não é só o número — é que a candidata nunca viveu um modelo variável. Antes de empurrar o total cash como argumento, ela valida se há abertura real pra esse modelo. Apresentar R$ 4.400 como solução pra quem tem receio de comissão pode soar vazio. A conversa certa aqui é sobre o modelo primeiro, o número depois.
+          </div>
+        </div>
+      </div>
+
+      <!-- RP 3 -->
+      <div class="rp-card">
+        <div class="rp-header">
+          <div class="rp-header-title">Situação 3 — Fixo atual alto, total cash melhor com a gente — mas precisa ser transparente</div>
+          <div class="rp-header-context">Ricardo F. • Ganha R$ 8.000 hoje (fixo alto, comissão fraca) • Pede R$ 5.000 fixo • Nosso total cash: R$ 9.075</div>
+        </div>
+        <div class="rp-body">
+          <div class="chat-area">
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Minha pretensão é R$ 5.000 fixo. Hoje ganho R$ 7.500 fixo mais uma comissão pequenininha, uns R$ 500 por mês."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Obrigada por compartilhar isso — ajuda muito. Então hoje você está em torno de R$ 8.000 no total, certo? Preciso ser transparente: nosso fixo para o nível que você se enquadra é R$ 6.075 — acima da sua pretensão, mas abaixo do fixo que você tem hoje. Isso por si só já é um ponto que vale você considerar."</div>
+            </div>
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Hmm, entendo. E a comissão?"</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"A comissão aqui é bem diferente do que você tem hoje — R$ 3.000 com 100% da meta. Então o total cash pode chegar em R$ 9.075. Mas quero que você faça essa conta com clareza: o fixo cai em relação ao que você tem hoje, e o variável sobe bastante — é uma troca real que vale você considerar. Faz sentido pra você nesse momento?"</div>
+            </div>
+          </div>
+          <div class="rp-tip">
+            <strong>Por que funciona:</strong> a recrutadora não esconde que o fixo vai cair em relação ao atual — fala isso antes mesmo do candidato perguntar. Isso gera confiança. O argumento do total cash só fica crível quando você é honesto sobre o que muda negativamente também.
+          </div>
+        </div>
+      </div>
+
+      <!-- RP 4 -->
+      <div class="rp-card">
+        <div class="rp-header">
+          <div class="rp-header-title">Situação 4 — Desalinhamento real: nosso total cash é menor que o atual (o mais difícil)</div>
+          <div class="rp-header-context">Amanda L. • Ganha R$ 5.500 hoje no total • Pede R$ 5.500 fixo • Nosso total cash com 100% da meta: R$ 5.000</div>
+        </div>
+        <div class="rp-body">
+          <div class="chat-area">
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Minha pretensão é R$ 5.500 fixo. Hoje ganho R$ 4.800 fixo mais umas comissões."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Obrigada por compartilhar! Quanto você costuma receber de comissão por mês, em média?"</div>
+            </div>
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Umas vezes R$ 600, outras R$ 800. Depende do mês, não costumo bater 100%."</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Entendi — então hoje você está levando em torno de R$ 5.400 a R$ 5.600 no total. Preciso ser honesta com você: nosso enquadramento para o seu perfil seria SDR I, com fixo de R$ 3.000 em SP. Com 100% da meta, o total cash chega em R$ 5.000 — ainda abaixo do que você recebe hoje, sem considerar o variável. Quero que você tenha essa clareza antes de qualquer avanço."</div>
+            </div>
+            <div class="msg-row">
+              <div class="msg-sender">Candidato</div>
+              <div class="msg-bubble msg-cand">"Entendo... mas tenho muito interesse na empresa. Tem como negociar?"</div>
+            </div>
+            <div class="msg-row right">
+              <div class="msg-sender">Recrutadora</div>
+              <div class="msg-bubble msg-rec">"Fico feliz pelo interesse! A faixa do SDR I tem pouca flexibilidade de fixo — é uma estrutura de bandas. O que posso fazer é entender melhor seu perfil ao longo do processo e ver se existe algum argumento pra um enquadramento diferente. Mas não quero criar expectativa que não consigo cumprir. Você toparia seguir com essa transparência em mente?"</div>
+            </div>
+          </div>
+          <div class="rp-tip">
+            <strong>Por que funciona:</strong> a recrutadora não tenta salvar a candidatura a qualquer custo. Ela calcula o total cash real da candidata antes de comparar — e percebe que o gap é ainda maior do que parecia pela pretensão. Ser honesta aqui protege a empresa (evita oferta recusada ou turnover rápido) e respeita o candidato.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANCO DE PERGUNTAS -->
+    <div id="tab-banco" class="section">
+      <div class="page-title">Banco de perguntas</div>
+      <p class="page-desc">Use antes de falar qualquer número — a ordem importa</p>
+
+      <div class="card">
+        <div class="section-title">1. Entender a realidade atual (sempre primeiro)</div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">1</div>
+          <div class="pergunta-text">"Qual é sua composição salarial hoje — tem fixo mais variável, ou só fixo?"</div>
+        </div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">2</div>
+          <div class="pergunta-text">"Quanto você costuma receber de comissão por mês, em média? Não o teto — a média real."</div>
+        </div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">3</div>
+          <div class="pergunta-text">"Então hoje você está levando em torno de R$ X no total, certo?" — confirme o total cash atual antes de qualquer comparação.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">2. Entender a pretensão com contexto</div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">4</div>
+          <div class="pergunta-text">"Essa pretensão de R$ X é só do fixo, ou você está pensando no pacote total?"</div>
+        </div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">5</div>
+          <div class="pergunta-text">"Como você pensa a composição ideal — prefere fixo maior ou um variável com upside real?"</div>
+        </div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">6</div>
+          <div class="pergunta-text">"Você tem algum mínimo de fixo que não abre mão por conta de compromissos mensais?"</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">3. Apresentar a proposta com transparência</div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">7</div>
+          <div class="pergunta-text">"Posso te mostrar como fica o nosso pacote completo? Fixo + comissão — pra você comparar com o que você tem hoje."</div>
+        </div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">8</div>
+          <div class="pergunta-text">"Com 100% de meta, o total cash seria R$ X. Comparando com R$ Y que você leva hoje — faz sentido pra você essa troca?"</div>
+        </div>
+        <div class="pergunta-item">
+          <div class="pergunta-num">9</div>
+          <div class="pergunta-text">"Quero ser transparente: o fixo [fica menor / bate a pretensão / supera o atual]. O que isso significa pra você na prática?"</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+function revelar(btn) {
+  btn.nextElementSibling.style.display = 'flex';
+  btn.style.display = 'none';
+}
+</script>
+</body>
+</html>
